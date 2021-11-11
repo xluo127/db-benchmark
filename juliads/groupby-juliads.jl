@@ -3,12 +3,12 @@
 print("# groupby-juliadf.jl\n"); flush(stdout);
 
 using InMemoryDatasets;
-using CSV;
+using DLMReader;
 using Statistics; # mean function
 using Printf;
 
 # Precompile methods for common patterns
-DataFrames.precompile(true)
+InMemoryDatasets.precompile(true);
 
 include("$(pwd())/_helpers/helpers.jl");
 
@@ -26,7 +26,7 @@ src_grp = string("data/", data_name, ".csv");
 println(string("loading dataset ", data_name)); flush(stdout);
 
 # Types are provided explicitly only to reduce memory use when parsing
-x = CSV.read(src_grp, Dataset, types=[PooledString, PooledString, PooledString, Int32, Int32, Int32, Int32, Int32, Float64], threaded=false);
+x = filereader(src_grp, types=[Characters{5}, Characters{5}, Characters{12}, Int32, Int32, Int32, Int32, Int32, Float64]);
 in_rows = size(x, 1);
 println(in_rows); flush(stdout);
 
@@ -116,13 +116,13 @@ ANS = 0;
 
 question = "median v3 sd v3 by id4 id5"; # q6
 GC.gc(false);
-t = @elapsed (ANS = combine(groupby(x, [:id4, :id5]), :v3 => median∘skipmissing => :median_v3, :v3 => std∘skipmissing => :sd_v3); println(size(ANS)); flush(stdout));
+t = @elapsed (ANS = combine(groupby(x, [:id4, :id5], stable=false), :v3 => median! => :median_v3, :v3 => std => :sd_v3); println(size(ANS)); flush(stdout));
 m = memory_usage();
 chkt = @elapsed chk = [sum(ANS.median_v3), sum(ANS.sd_v3)];
 write_log(1, task, data_name, in_rows, question, size(ANS, 1), size(ANS, 2), solution, ver, git, fun, t, m, cache, make_chk(chk), chkt, on_disk);
 ANS = 0;
 GC.gc(false);
-t = @elapsed (ANS = combine(groupby(x, [:id4, :id5]), :v3 => median∘skipmissing => :median_v3, :v3 => std∘skipmissing => :sd_v3); println(size(ANS)); flush(stdout));
+t = @elapsed (ANS = combine(groupby(x, [:id4, :id5], stable=false), :v3 => median! => :median_v3, :v3 => std => :sd_v3); println(size(ANS)); flush(stdout));
 m = memory_usage();
 chkt = @elapsed chk = [sum(ANS.median_v3), sum(ANS.sd_v3)];;
 write_log(2, task, data_name, in_rows, question, size(ANS, 1), size(ANS, 2), solution, ver, git, fun, t, m, cache, make_chk(chk), chkt, on_disk);
@@ -150,13 +150,13 @@ ANS = 0;
 
 question = "largest two v3 by id6"; # q8
 GC.gc(false);
-t = @elapsed (ANS = combine(groupby(dropmissing(x, :v3), :id6), :v3 => (x -> partialsort!(x, 1:min(2, length(x)), rev=true)) => :largest2_v3); println(size(ANS)); flush(stdout));
+t = @elapsed (ANS = combine(groupby(x, :id6, stable=false), :v3 => (x -> partialsort!(x, 1:min(2, IMD.n(x)), by = y->-y)) => :largest2_v3); println(size(ANS)); flush(stdout));
 m = memory_usage();
 chkt = @elapsed chk = sum(ANS.largest2_v3);
 write_log(1, task, data_name, in_rows, question, size(ANS, 1), size(ANS, 2), solution, ver, git, fun, t, m, cache, make_chk(chk), chkt, on_disk);
 ANS = 0;
 GC.gc(false);
-t = @elapsed (ANS = combine(groupby(dropmissing(x, :v3), :id6), :v3 => (x -> partialsort!(x, 1:min(2, length(x)), rev=true)) => :largest2_v3); println(size(ANS)); flush(stdout));
+t = @elapsed (ANS = combine(groupby(x, :id6, stable=false), :v3 => (x -> partialsort!(x, 1:min(2, IMD.n(x)), by = y->-y)) => :largest2_v3); println(size(ANS)); flush(stdout));
 m = memory_usage();
 chkt = @elapsed chk = sum(ANS.largest2_v3);
 write_log(2, task, data_name, in_rows, question, size(ANS, 1), size(ANS, 2), solution, ver, git, fun, t, m, cache, make_chk(chk), chkt, on_disk);
@@ -186,13 +186,13 @@ ANS = 0;
 
 question = "sum v3 count by id1:id6"; # q10
 GC.gc(false);
-t = @elapsed (ANS = combine(groupby(x, [:id1, :id2, :id3, :id4, :id5, :id6]), :v3 => sum∘skipmissing => :v3, :v3 => length => :count); println(size(ANS)); flush(stdout));
+t = @elapsed (ANS = combine(gatherby(x, 1:6, stable=false), :v3 => sum => :v3, :v3 => length => :count); println(size(ANS)); flush(stdout));
 m = memory_usage();
 chkt = @elapsed chk = [sum(ANS.v3), sum(ANS.count)];
 write_log(1, task, data_name, in_rows, question, size(ANS, 1), size(ANS, 2), solution, ver, git, fun, t, m, cache, make_chk(chk), chkt, on_disk);
 ANS = 0;
 GC.gc(false);
-t = @elapsed (ANS = combine(groupby(x, [:id1, :id2, :id3, :id4, :id5, :id6]), :v3 => sum∘skipmissing => :v3, :v3 => length => :count); println(size(ANS)); flush(stdout));
+t = @elapsed (ANS = combine(gatherby(x, 1:6, stable=false), :v3 => sum => :v3, :v3 => length => :count); println(size(ANS)); flush(stdout));
 m = memory_usage();
 chkt = @elapsed chk = [sum(ANS.v3), sum(ANS.count)];
 write_log(2, task, data_name, in_rows, question, size(ANS, 1), size(ANS, 2), solution, ver, git, fun, t, m, cache, make_chk(chk), chkt, on_disk);
