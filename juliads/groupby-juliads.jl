@@ -1,6 +1,3 @@
-It seems that juliads.jl is blocked by system since it is sh file, I just paste the content here and you can copy it to your juliads.jl
-
-####################
 #!/usr/bin/env julia
 
 print("# groupby-juliads.jl\n"); flush(stdout);
